@@ -61,3 +61,5 @@ Capturas de: pruebas locales; workflow exitoso; workflow fallido; workflow corre
 - No se debe utilizar el modelo con clientes reales: sus datos de entrenamiento son artificiales.
 - Los rangos de dependencias facilitan la práctica; para producción, fijar versiones exactas y hashes y verificar reproducibilidad.
 - El workflow realiza CI y publicación (Continuous Delivery), **no despliegue automático a producción**.
+
+Proyecto Telco Customer Churn con integración continua.
