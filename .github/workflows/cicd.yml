@@ -1,0 +1,47 @@
+name: Telco CI CD  # Nombre del flujo
+on:  # Disparadores
+  push:  # Al publicar cambios
+    branches: [main]  # Solo main
+  pull_request:  # En propuestas de cambios
+    branches: [main]  # Hacia main
+permissions:  # Permisos mínimos
+  contents: read  # Leer repositorio
+jobs:  # Trabajos independientes
+  test:  # Validar código
+    runs-on: ubuntu-latest  # Runner Linux
+    steps:  # Acciones del job
+      - uses: actions/checkout@v4  # Descargar código
+      - uses: actions/setup-python@v5  # Preparar Python
+        with:  # Configuración
+          python-version: '3.11'  # Versión
+      - name: Instalar dependencias  # Preparar librerías
+        run: python -m pip install -r requirements.txt  # Instalación
+      - name: Ejecutar pruebas  # Validar API
+        run: python -m pytest -v  # pytest
+  docker:  # Publicar contenedor
+    needs: test  # Solo si test termina bien
+    if: github.event_name == 'push'  # Evitar publicación en PR
+    runs-on: ubuntu-latest  # Runner Linux
+    permissions:  # Permisos específicos
+      contents: read  # Leer repositorio
+      packages: write  # Publicar GHCR
+    steps:  # Pasos de Docker
+      - uses: actions/checkout@v4  # Descargar código
+      - name: Normalizar nombre  # GHCR usa nombres en minúsculas
+        id: image  # ID para otros pasos
+        shell: bash  # Usar Bash
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"  # Convertir a minúsculas
+      - name: Iniciar sesión en GHCR  # Autenticar publicación
+        uses: docker/login-action@v3  # Login oficial
+        with:  # Credenciales
+          registry: ghcr.io  # Registro
+          username: ${{ github.actor }}  # Cuenta
+          password: ${{ secrets.GITHUB_TOKEN }}  # Token del workflow
+      - name: Construir y publicar  # Imagen versionada
+        uses: docker/build-push-action@v6  # Acción oficial
+        with:  # Opciones
+          context: .  # Contexto del Dockerfile
+          push: true  # Subir a GHCR
+          tags: |  # Dos etiquetas
+            ${{ steps.image.outputs.name }}:latest
+            ${{ steps.image.outputs.name }}:${{ github.sha }}
